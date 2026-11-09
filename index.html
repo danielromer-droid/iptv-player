@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Open Media Player</title>
+  <meta name="description" content="Educational web media player for your own Xtream Codes, M3U, HLS/DASH/MP4 and local media sources.">
+  <meta name="theme-color" content="#0f1115">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>Open Media Player</h1>
+    <button id="installBtn" class="secondary" hidden>Install app</button>
+    <label class="proxy-toggle" title="Route requests through the Cloudflare proxy (needed for http:// sources or servers without CORS)">
+      <input type="checkbox" id="useProxy"> Use proxy
+    </label>
+  </header>
+
+  <main class="layout">
+    <section class="player-col">
+      <div class="video-wrap">
+        <video id="video" controls playsinline></video>
+        <div id="overlay" class="overlay">Pick a source to start playing.</div>
+      </div>
+      <div class="now">
+        <strong id="nowTitle">Nothing playing</strong>
+        <span id="nowInfo" class="muted"></span>
+      </div>
+      <div id="status" class="status" role="status"></div>
+    </section>
+
+    <section class="side-col">
+      <nav class="tabs" role="tablist">
+        <button role="tab" data-tab="xtream" class="active">Xtream Codes</button>
+        <button role="tab" data-tab="m3u">M3U</button>
+        <button role="tab" data-tab="single">Single stream</button>
+        <button role="tab" data-tab="local">Local files</button>
+        <button role="tab" data-tab="api">Stream API</button>
+      </nav>
+
+      <!-- Xtream Codes -->
+      <div class="panel active" id="tab-xtream">
+        <form id="xtreamForm" class="form">
+          <input name="server" placeholder="Server URL, e.g. http://example.com:8080" required>
+          <div class="row">
+            <input name="username" placeholder="Username" required autocomplete="username">
+            <input name="password" type="password" placeholder="Password" required autocomplete="current-password">
+          </div>
+          <div class="row">
+            <select name="format" title="Live stream format">
+              <option value="m3u8">Live as HLS (.m3u8)</option>
+              <option value="ts">Live as MPEG-TS (.ts)</option>
+            </select>
+            <label class="check"><input type="checkbox" name="remember"> Remember on this device</label>
+          </div>
+          <button type="submit">Log in</button>
+        </form>
+        <div id="xtreamBrowser" hidden>
+          <div id="xtreamAccount" class="muted small"></div>
+          <div class="row">
+            <select id="xtreamSection">
+              <option value="live">Live TV</option>
+              <option value="vod">Movies</option>
+              <option value="series">Series</option>
+            </select>
+            <select id="xtreamCategory"></select>
+          </div>
+          <input id="xtreamSearch" placeholder="Search…">
+          <ul id="xtreamList" class="list"></ul>
+          <button id="xtreamLogout" class="secondary">Log out</button>
+        </div>
+      </div>
+
+      <!-- M3U -->
+      <div class="panel" id="tab-m3u">
+        <form id="m3uForm" class="form">
+          <input name="url" placeholder="Playlist URL (.m3u / .m3u8)">
+          <div class="row">
+            <button type="submit">Load URL</button>
+            <label class="file-btn">Open file…<input type="file" id="m3uFile" accept=".m3u,.m3u8,audio/x-mpegurl,application/vnd.apple.mpegurl,text/plain" hidden></label>
+          </div>
+        </form>
+        <div id="m3uBrowser" hidden>
+          <div class="row">
+            <select id="m3uGroup"></select>
+            <span id="m3uCount" class="muted small"></span>
+          </div>
+          <input id="m3uSearch" placeholder="Search…">
+          <ul id="m3uList" class="list"></ul>
+        </div>
+      </div>
+
+      <!-- Single stream -->
+      <div class="panel" id="tab-single">
+        <form id="singleForm" class="form">
+          <input name="url" placeholder="Stream URL (HLS .m3u8, DASH .mpd, MP4, MP3…)" required>
+          <select name="type">
+            <option value="auto">Detect type automatically</option>
+            <option value="hls">HLS</option>
+            <option value="dash">DASH</option>
+            <option value="native">Direct file (MP4, WebM, MP3…)</option>
+          </select>
+          <button type="submit">Play</button>
+        </form>
+        <p class="muted small">Tip: you can also open <code>?url=&lt;stream&gt;</code> on this page to start a stream directly.</p>
+        <h3>History</h3>
+        <ul id="historyList" class="list short"></ul>
+      </div>
+
+      <!-- Local files -->
+      <div class="panel" id="tab-local">
+        <label class="drop" id="dropZone">
+          <input type="file" id="localFiles" accept="audio/*,video/*" multiple hidden>
+          <span>Drop audio/video files here or click to choose.</span>
+          <span class="muted small">Files stay on your device; nothing is uploaded.</span>
+        </label>
+        <ul id="localList" class="list"></ul>
+      </div>
+
+      <!-- Stream API -->
+      <div class="panel" id="tab-api">
+        <form id="apiForm" class="form">
+          <input name="url" placeholder="JSON endpoint returning a stream or a list of streams" required>
+          <input name="header" placeholder="Optional header, e.g. Authorization: Bearer abc123">
+          <button type="submit">Fetch</button>
+        </form>
+        <details class="small">
+          <summary>Accepted response shapes</summary>
+          <pre>{ "url": "https://…/live.m3u8", "name": "My stream" }
+
+[ { "name": "A", "url": "…" }, { "title": "B", "stream_url": "…" } ]
+
+{ "streams": [ … ] }   or   { "data": [ … ] }</pre>
+          <p>Recognised URL fields: url, src, stream, stream_url, streamUrl, hls, dash, file, link. Name fields: name, title, label.</p>
+        </details>
+        <ul id="apiList" class="list"></ul>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot muted small">
+    Educational project. No content is included: only play sources you own or are authorised to use.
+  </footer>
+
+  <script src="vendor/hls.min.js"></script>
+  <script src="vendor/dash.all.min.js"></script>
+  <script src="vendor/mpegts.js"></script>
+  <script src="app.js" type="module"></script>
+</body>
+</html>

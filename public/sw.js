@@ -1,6 +1,6 @@
 // App-shell cache so the player opens offline and installs as an app.
 // Streams, proxy calls and other origins are never cached.
-const CACHE = 'omp-v1';
+const CACHE = 'omp-v2';
 const SHELL = [
   './', 'index.html', 'styles.css', 'app.js', 'manifest.webmanifest',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png',

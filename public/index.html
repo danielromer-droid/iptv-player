@@ -16,8 +16,8 @@
   <header class="topbar">
     <h1>Open Media Player</h1>
     <button id="installBtn" class="secondary" hidden>Install app</button>
-    <label class="proxy-toggle" title="Route requests through the Cloudflare proxy (needed for http:// sources or servers without CORS)">
-      <input type="checkbox" id="useProxy"> Use proxy
+    <label class="proxy-toggle" title="http:// sources always use the proxy. Tick this to also send https:// sources through it (for servers without CORS).">
+      <input type="checkbox" id="useProxy"> Always use proxy
     </label>
   </header>
 

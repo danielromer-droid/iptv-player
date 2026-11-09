@@ -31,15 +31,21 @@ const proxyBox = $('#useProxy');
 proxyBox.checked = store.get('useProxy', false);
 proxyBox.addEventListener('change', () => store.set('useProxy', proxyBox.checked));
 
+// http:// sources can't load on an https:// page (mixed content), so they
+// always go through the proxy. "Always use proxy" also covers https sources
+// that send no CORS headers.
+function needsProxy(url) {
+  if (!/^https?:\/\//i.test(url)) return false;
+  if (proxyBox.checked) return true;
+  return location.protocol === 'https:' && /^http:\/\//i.test(url);
+}
 function viaProxy(url) {
-  if (!proxyBox.checked || !/^https?:\/\//i.test(url)) return url;
+  if (!needsProxy(url)) return url;
   return `${location.origin}/api/proxy?url=${encodeURIComponent(url)}`;
 }
 
 function mixedContentHint(url) {
-  if (location.protocol === 'https:' && /^http:\/\//i.test(url) && !proxyBox.checked) {
-    return ' This is an http:// source on an https:// page; the browser blocks that. Turn on "Use proxy".';
-  }
+  if (needsProxy(url)) return ' (Request went through the proxy: the server may be down, or it may refuse connections from Cloudflare.)';
   return '';
 }
 
@@ -48,9 +54,13 @@ async function fetchText(url, headers = {}) {
   try {
     res = await fetch(viaProxy(url), { headers });
   } catch (e) {
-    throw new Error('Network or CORS error.' + (mixedContentHint(url) || (proxyBox.checked ? '' : ' Try turning on "Use proxy".')));
+    throw new Error('Network or CORS error.' + (mixedContentHint(url) || ' Try turning on "Always use proxy".'));
   }
-  if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`.trim());
+  if (!res.ok) {
+    let detail = '';
+    if (needsProxy(url)) { try { detail = (await res.text()).slice(0, 200); } catch { /* ignore */ } }
+    throw new Error(`HTTP ${res.status} ${res.statusText}`.trim() + (detail ? `: ${detail}` : '') + mixedContentHint(url));
+  }
   return res.text();
 }
 async function fetchJSON(url, headers = {}) {

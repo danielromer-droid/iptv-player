@@ -25,9 +25,9 @@ add &proxy=1 to force the proxy on
 
 Accepted Stream API responses: `{ "url": "…" }`, `[{ "name": "…", "url": "…" }]`, or the list under `streams`, `data`, `items` or `channels`. URL fields: `url, src, stream, stream_url, streamUrl, hls, dash, file, link`.
 
-## The proxy (why the "Use proxy" switch exists)
+## The proxy
 
-Your site is served over `https://`. Browsers refuse to load `http://` media on an `https://` page, and many servers don't send CORS headers. Turning on **Use proxy** routes requests through `functions/api/proxy.js`, a Cloudflare Pages Function deployed automatically with the site. It also rewrites HLS playlists so their segments go through it.
+Your site is served over `https://`. Browsers refuse to load `http://` media on an `https://` page, and many servers don't send CORS headers. `http://` sources are therefore always sent through the proxy automatically; ticking **Always use proxy** does the same for `https://` sources. The proxy is `functions/api/proxy.js`, deployed automatically with the site. It also rewrites HLS playlists so their segments go through it.
 
 Built-in limits: GET only, only requests coming from your own site, no localhost/private network addresses. To lock it down further, set **`ALLOWED_HOSTS`** (see below) so it only reaches your own servers.
 

@@ -125,7 +125,10 @@ function play({ url, title = '', info = '', type = 'auto', proxy = true }) {
   } else if (kind === 'dash') {
     if (!window.dashjs) return fail('DASH library failed to load.');
     const dash = dashjs.MediaPlayer().create();
-    dash.initialize(video, src, true);
+    // Proxy each request (manifest and every segment) individually: a proxied
+    // manifest URL would break dash.js's resolution of relative segment URLs.
+    if (proxy) dash.extend('RequestModifier', () => ({ modifyRequestURL: (u) => viaProxy(u), modifyRequestHeader: (x) => x }), true);
+    dash.initialize(video, url, true);
     dash.on(dashjs.MediaPlayer.events.ERROR, (e) => fail('DASH error: ' + (e?.error?.message || 'unknown') + '.'));
     engine = { destroy: () => dash.reset() };
   } else if (kind === 'mpegts') {

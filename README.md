@@ -17,9 +17,9 @@ It plays sources **you** supply. No channels, playlists or content are included.
 Links that start playback directly:
 
 ```
-https://your-site.pages.dev/?url=<stream URL>&title=<name>
-https://your-site.pages.dev/?m3u=<playlist URL>
-https://your-site.pages.dev/?api=<JSON endpoint>
+https://your-site/?url=<stream URL>&title=<name>
+https://your-site/?m3u=<playlist URL>
+https://your-site/?api=<JSON endpoint>
 add &proxy=1 to force the proxy on
 ```
 
@@ -33,13 +33,20 @@ Built-in limits: GET only, only requests coming from your own site, no localhost
 
 Note: Cloudflare's free plan includes 100,000 Function requests per day, and every HLS segment through the proxy counts as one request. Cloudflare's terms also restrict serving large amounts of video through its network, so keep the proxy for light, personal use.
 
-## Deploy on Cloudflare Pages
+## Deploy on Cloudflare
 
-1. In the Cloudflare dashboard, open **Workers & Pages → Create → Pages → Connect to Git**.
-2. Pick this repository.
-3. Build settings: **Framework preset: None**, **Build command: empty**, **Build output directory: `/`**.
-4. Click **Save and Deploy**. You get a `https://<name>.pages.dev` address. Every push to `main` redeploys.
-5. Optional, recommended: **Settings → Variables and Secrets** → add `ALLOWED_HOSTS` = `your-server.com,cdn.your-server.com`, then redeploy.
+### Option A: Workers (recommended, what `wrangler.jsonc` is set up for)
+
+1. Cloudflare dashboard → **Workers & Pages → Create → Import a repository**, pick this repo.
+2. Keep the defaults: build command empty, deploy command `npx wrangler deploy`.
+3. Deploy. You get `https://iptv-player.<your-subdomain>.workers.dev`. Every push to `main` redeploys.
+4. Optional, recommended: **Settings → Variables and Secrets** → add `ALLOWED_HOSTS` = `your-server.com,cdn.your-server.com`.
+
+`worker.js` serves the static files from `public/` and sends `/api/proxy` to the proxy.
+
+### Option B: Pages
+
+**Workers & Pages → Create → Pages → Connect to Git**, framework preset **None**, build command empty, build output directory **`public`**. The proxy in `functions/` is picked up automatically.
 
 | Variable | Effect |
 | --- | --- |
@@ -54,14 +61,14 @@ Open the site in Chrome/Edge and click **Install app** (or the install icon in t
 ## Run locally
 
 ```bash
-npx wrangler pages dev .
+npx wrangler dev
 ```
 
-Then open http://localhost:8788. Plain static hosting (`npx serve .`) works too, without the proxy.
+Then open http://localhost:8787. Plain static hosting (`npx serve public`) works too, without the proxy.
 
 ## Browser support notes
 
-- HLS via [hls.js](https://github.com/video-dev/hls.js) (native on Safari/iOS), DASH via [dash.js](https://github.com/Dash-Industry-Forum/dash.js), MPEG-TS/FLV via [mpegts.js](https://github.com/xqq/mpegts.js). These are vendored in `vendor/` with their licenses.
+- HLS via [hls.js](https://github.com/video-dev/hls.js) (native on Safari/iOS), DASH via [dash.js](https://github.com/Dash-Industry-Forum/dash.js), MPEG-TS/FLV via [mpegts.js](https://github.com/xqq/mpegts.js). These are vendored in `public/vendor/` with their licenses.
 - Codecs depend on the browser: H.264/AAC works almost everywhere; HEVC/H.265, AC-3 and MKV files often don't play in browsers.
 - MPEG-TS playback needs Media Source Extensions, which iPhones don't have; use HLS there.
 

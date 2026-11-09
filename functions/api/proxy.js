@@ -4,7 +4,7 @@
 // reach http:// servers from the https:// site and servers that send no CORS
 // headers. HLS playlists are rewritten so their segments also go through it.
 //
-// Safety limits (set these in Pages > Settings > Variables):
+// Safety limits (set these in the Cloudflare dashboard: Settings > Variables and Secrets):
 //   ALLOWED_HOSTS  optional, comma-separated host names, e.g. "my-server.com,cdn.my-server.com".
 //                  When set, every other host is refused. Strongly recommended.
 //   ALLOW_ANY_ORIGIN  set to "1" to let other websites use this proxy (off by default).

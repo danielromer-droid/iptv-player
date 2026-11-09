@@ -59,7 +59,7 @@ async function fetchText(url, headers = {}) {
   if (!res.ok) {
     let detail = '';
     if (needsProxy(url)) { try { detail = (await res.text()).slice(0, 200); } catch { /* ignore */ } }
-    throw new Error(`HTTP ${res.status} ${res.statusText}`.trim() + (detail ? `: ${detail}` : '') + mixedContentHint(url));
+    throw new Error(`HTTP ${res.status} ${res.statusText}`.trim() + (detail ? `: ${detail}` : '') + (res.status >= 500 || res.status === 403 ? mixedContentHint(url) : ''));
   }
   return res.text();
 }
@@ -233,7 +233,7 @@ renderHistory();
 $('#singleForm').addEventListener('submit', (e) => {
   e.preventDefault();
   const f = new FormData(e.target);
-  const url = String(f.get('url')).trim();
+  const url = cleanUrl(f.get('url'));
   if (url) play({ url, type: String(f.get('type')) });
 });
 
@@ -355,7 +355,7 @@ async function loadM3UUrl(url) {
 }
 $('#m3uForm').addEventListener('submit', (e) => {
   e.preventDefault();
-  const url = String(new FormData(e.target).get('url')).trim();
+  const url = cleanUrl(new FormData(e.target).get('url'));
   if (url) loadM3UUrl(url);
 });
 $('#m3uForm [name=url]').value = store.get('m3uUrl', '');
@@ -384,7 +384,7 @@ function xtStreamUrl(kind, id, ext) {
 }
 
 async function xtLogin({ server, username, password, format, remember }) {
-  let base = server.trim().replace(/\/+$/, '');
+  let base = cleanUrl(server).replace(/\/+$/, '');
   if (!/^https?:\/\//i.test(base)) base = 'http://' + base;
   base = base.replace(/\/(player_api|get)\.php.*$/i, '');
   Object.assign(xt, { base, user: username.trim(), pass: password, format });
@@ -534,7 +534,7 @@ export function extractStreams(data) {
 $('#apiForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const f = new FormData(e.target);
-  const url = String(f.get('url')).trim();
+  const url = cleanUrl(f.get('url'));
   const headers = {};
   const h = String(f.get('header') || '').trim();
   if (h.includes(':')) { const i = h.indexOf(':'); headers[h.slice(0, i).trim()] = h.slice(i + 1).trim(); }
@@ -558,6 +558,8 @@ $('#apiForm').addEventListener('submit', async (e) => {
 })();
 
 // ---------- helpers ----------
+// Pasted links often pick up spaces or line breaks (e.g. "iptv- org.github.io/ x").
+function cleanUrl(v) { return String(v ?? '').replace(/\s+/g, ''); }
 function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
 
 // ---------- PWA ----------

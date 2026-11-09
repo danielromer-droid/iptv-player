@@ -66,6 +66,20 @@ export async function onRequest({ request, env }) {
     return new Response(body, { status: upstream.status, headers: out });
   }
 
+  const looksDash = type.includes('dash+xml') || /\.mpd$/i.test(new URL(finalUrl).pathname);
+  if (looksDash && request.method === 'GET' && upstream.ok) {
+    // Give the manifest an absolute BaseURL so the player resolves segment
+    // URLs against the real server, not against this proxy.
+    let body = await upstream.text();
+    if (!/<BaseURL>\s*https?:/i.test(body)) {
+      const dir = new URL('.', finalUrl).toString().replace(/&/g, '&amp;');
+      body = body.replace(/(<MPD\b[^>]*>)/i, `$1<BaseURL>${dir}</BaseURL>`);
+    }
+    out.delete('content-length');
+    out.set('content-type', 'application/dash+xml');
+    return new Response(body, { status: upstream.status, headers: out });
+  }
+
   return new Response(upstream.body, { status: upstream.status, headers: out });
 }
 

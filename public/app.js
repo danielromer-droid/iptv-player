@@ -36,6 +36,7 @@ proxyBox.addEventListener('change', () => store.set('useProxy', proxyBox.checked
 // that send no CORS headers.
 function needsProxy(url) {
   if (!/^https?:\/\//i.test(url)) return false;
+  if (url.startsWith(location.origin + '/api/proxy')) return false; // already proxied
   if (proxyBox.checked) return true;
   return location.protocol === 'https:' && /^http:\/\//i.test(url);
 }
